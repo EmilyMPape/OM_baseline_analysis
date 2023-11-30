@@ -459,15 +459,16 @@ int main() {
   // ------------------------------------------------------------------------------------------------------------------------
   // build waveforms
   
+  // setup waveform histograms to be filled
   TH1D *waveform = new TH1D("waveform", "waveform", no_cells, 0, no_cells);
   TH1D *swaveform = new TH1D("swaveform", "singular waveform", no_cells, 0, no_cells);
   TH1D *avwaveform = new TH1D("avwaveform", "average waveform", no_cells, 0, no_cells);
   
   //for calibrating single waveform
   Double_t single_waveT[1024];
-  std::vector<std::vector<Double_t>> cell_ordered_waveforms;
+  std::vector<std::vector<Double_t>> cell_ordered_waveforms; // vector containing readings from all memory cells for each event
 
-  for (int event = 0; event < max_entries; event++) {  // i: loop on event number
+  for (int event = 0; event < max_entries; event++) {  // event: loop on event number
     tree->GetEntry(event);
 
     for (int k = 0; k < calo_nohits; k++) {  // k: loop on calo hit number
@@ -475,7 +476,7 @@ int main() {
 
       if (om_num == chosen_om){ // select only events for chosen OM
         tracking_event.push_back(event);
-        std::vector<double> temp_ADC_vec(no_cells);
+        std::vector<double> temp_ADC_vec(no_cells); // temporary vector to append to cell_ordered_waveforms
         
         std::vector<short> wave_k = wave->at(k); // get the waveform corresponding to calo hit k
         int fcr_k = fcr->at(k); // get the fcr corresponding to k
@@ -533,6 +534,7 @@ int main() {
   std::vector<double> cell_nums;
   std::vector<double> no_events;
   
+  // also define as arrays
   Double_t empty_x_errT[1024];
   Double_t meansT[1024];
   Double_t sigmasT[1024];
@@ -540,7 +542,7 @@ int main() {
   Double_t cell_numsT[1024];
   Double_t no_eventsT[1024];
   
-    for (int cell = 0; cell < no_cells; cell++){ // cell: loop on memory cell
+  for (int cell = 0; cell < no_cells; cell++){ // cell: loop on memory cell
     std::vector<double> ADC_vals = all_cells.at(cell); // select the memory cell from all_cells
     int no_vals = ADC_vals.size(); // number of ADC readings/entries
     
@@ -620,19 +622,20 @@ int main() {
   make_tgraph_single_wave(1024, cell_numsT, single_waveT, empty_x_errT, sigmasT, "ADC by cell - single waveform", "Cell", "ADC", "pol1", "calibration_plots/singular_waveform_pre_cal.png");
   make_cal_tgraph_single_wave(1024, cell_numsT, single_waveT, empty_x_errT, sigmasT, "Calibrated ADC by cell - single waveform", "Cell", "ADC - Calibration constant", "pol1", "calibration_plots/singular_waveform_post_cal.png", meansT);
   
+  // calulate standard deviations
   Double_t pre_cal_std_dev [cell_ordered_waveforms.size()];
   calc_standard_dev(cell_ordered_waveforms, pre_cal_std_dev, meansT, "no");
 
   Double_t post_cal_std_dev [cell_ordered_waveforms.size()];
   calc_standard_dev(cell_ordered_waveforms, post_cal_std_dev, meansT, "yes");
   
+  // plot standard deviations
   plot_standard_dev(pre_cal_std_dev, post_cal_std_dev, sizeof(post_cal_std_dev)/sizeof(post_cal_std_dev[0]), chosen_om, "calibration_plots/pre_cal_standard_deviation.png", "calibration_plots/post_cal_standard_deviation.png", 1024);
-  //for_mean_tgraph(all_cells, means_arr, chosen_om, tracking_event);
   
   // ------------------------------------------------------------------------------------------------------------------------
   // calculate calibration constant for every 64 memory cells
   
-  std::vector<std::vector<double> > all_cells64(64);
+  std::vector<std::vector<double> > all_cells64(64); // vector to replace all_cells, with data from every 64 cells combined
 
   Double_t meansT_64[64];
   Double_t sigmasT_64[64];
@@ -640,6 +643,7 @@ int main() {
   Double_t cell_numsT_64[64];
   Double_t no_eventsT_64[64];
   
+  // combine data from every 64 cells
   for (int i = 0; i < 64; i++){
     for (int j = 0; j < 16; j++){
       all_cells64.at(i).insert(all_cells64.at(i).end(), all_cells.at((64*j)+i).begin(), all_cells.at((64*j)+i).end());
@@ -729,19 +733,20 @@ int main() {
   // plot tgraph for calibrated single wave
   make_cal_tgraph_single_wave(1024, cell_numsT, single_waveT, empty_x_errT, sigmasT_64_full, "Calibrated ADC by cell - single waveform", "Cell", "ADC - Calibration constant", "pol1", "calibration_plots/singular_waveform_post_cal64.png", meansT_64_full);
   
+  // calculate standard deviations
   Double_t pre_cal_std_dev64 [cell_ordered_waveforms.size()];
   calc_standard_dev(cell_ordered_waveforms, pre_cal_std_dev64, meansT_64_full, "no");
 
   Double_t post_cal_std_dev64 [cell_ordered_waveforms.size()];
   calc_standard_dev(cell_ordered_waveforms, post_cal_std_dev64, meansT_64_full, "yes");
 
+  // plot standard deviations
   plot_standard_dev(pre_cal_std_dev64, post_cal_std_dev64, sizeof(post_cal_std_dev64)/sizeof(post_cal_std_dev64[0]), chosen_om, "calibration_plots/pre_cal_standard_deviation64.png", "calibration_plots/post_cal_standard_deviation64.png", 64);
-  //for_mean_tgraph(all_cells, means_arr64_full, chosen_om, tracking_event);
   
   // ------------------------------------------------------------------------------------------------------------------------
   // calculate calibration constant for every 16 memory cells
   
-  std::vector<std::vector<double> > all_cells16(16);
+  std::vector<std::vector<double> > all_cells16(16); // vector to replace all_cells, with data from every 16 cells combined
 
   Double_t meansT_16[16];
   Double_t sigmasT_16[16];
@@ -749,6 +754,7 @@ int main() {
   Double_t cell_numsT_16[16];
   Double_t no_eventsT_16[16];
   
+  // combine data from every 16 cells
   for (int i = 0; i < 16; i++){
     for (int j = 0; j < 64; j++){
       all_cells16.at(i).insert(all_cells16.at(i).end(), all_cells.at((16*j)+i).begin(), all_cells.at((16*j)+i).end());
@@ -838,14 +844,15 @@ int main() {
   // plot tgraph for calibrated single wave
   make_cal_tgraph_single_wave(1024, cell_numsT, single_waveT, empty_x_errT, sigmasT_16_full, "Calibrated ADC by cell - single waveform", "Cell", "ADC - Calibration constant", "pol1", "calibration_plots/singular_waveform_post_cal16.png", meansT_16_full);
   
+  // calculate standard deviations
   Double_t pre_cal_std_dev16 [cell_ordered_waveforms.size()];
   calc_standard_dev(cell_ordered_waveforms, pre_cal_std_dev16, meansT_16_full, "no");
 
   Double_t post_cal_std_dev16 [cell_ordered_waveforms.size()];
   calc_standard_dev(cell_ordered_waveforms, post_cal_std_dev16, meansT_16_full, "yes");
 
+  // plot standard deviations
   plot_standard_dev(pre_cal_std_dev16, post_cal_std_dev16, sizeof(post_cal_std_dev16)/sizeof(post_cal_std_dev16[0]), chosen_om, "calibration_plots/pre_cal_standard_deviation16.png", "calibration_plots/post_cal_standard_deviation16.png", 16);
-  //for_mean_tgraph(all_cells, means_arr16_full, chosen_om, tracking_event);
   
   // ------------------------------------------------------------------------------------------------------------------------
   // overlayed plots
